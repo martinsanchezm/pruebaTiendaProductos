@@ -32,6 +32,15 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir acceso a tus fotos para subir multimedia.",
+          "cameraPermission": "Permitir acceso a tu cámara para capturar imágenes y vídeos.",
+          "microphonePermission": "Permitir acceso al micrófono para grabar vídeos."
+        }
       ]
     ],
     "experiments": {
