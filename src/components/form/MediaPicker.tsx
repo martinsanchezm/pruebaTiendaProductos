@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -12,6 +13,31 @@ interface MediaPickerProps {
   onAdd: (asset: MediaAsset) => void;
   onRemove: (uri: string) => void;
   error?: string;
+}
+
+const HEIC_MIMES = new Set(['image/heic', 'image/heif']);
+
+async function normalizeImageAsset(asset: ImagePicker.ImagePickerAsset): Promise<MediaAsset> {
+  const rawMime = asset.mimeType ?? 'image/jpeg';
+  if (asset.type !== 'video' && HEIC_MIMES.has(rawMime)) {
+    const result = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      [],
+      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+    );
+    return {
+      uri: result.uri,
+      type: 'image',
+      fileName: asset.fileName?.replace(/\.(heic|heif)$/i, '.jpg') ?? `media_${Date.now()}.jpg`,
+      mimeType: 'image/jpeg',
+    };
+  }
+  return {
+    uri: asset.uri,
+    type: asset.type === 'video' ? 'video' : 'image',
+    fileName: asset.fileName ?? `media_${Date.now()}`,
+    mimeType: rawMime,
+  };
 }
 
 async function pickFromGallery(): Promise<MediaAsset | null> {
@@ -29,13 +55,7 @@ async function pickFromGallery(): Promise<MediaAsset | null> {
 
   if (result.canceled || !result.assets[0]) return null;
 
-  const asset = result.assets[0];
-  return {
-    uri: asset.uri,
-    type: asset.type === 'video' ? 'video' : 'image',
-    fileName: asset.fileName ?? `media_${Date.now()}`,
-    mimeType: asset.mimeType ?? (asset.type === 'video' ? 'video/mp4' : 'image/jpeg'),
-  };
+  return normalizeImageAsset(result.assets[0]);
 }
 
 async function pickFromCamera(): Promise<MediaAsset | null> {
@@ -52,13 +72,7 @@ async function pickFromCamera(): Promise<MediaAsset | null> {
 
   if (result.canceled || !result.assets[0]) return null;
 
-  const asset = result.assets[0];
-  return {
-    uri: asset.uri,
-    type: asset.type === 'video' ? 'video' : 'image',
-    fileName: asset.fileName ?? `media_${Date.now()}`,
-    mimeType: asset.mimeType ?? (asset.type === 'video' ? 'video/mp4' : 'image/jpeg'),
-  };
+  return normalizeImageAsset(result.assets[0]);
 }
 
 export function MediaPicker({ media, onAdd, onRemove, error }: MediaPickerProps) {
